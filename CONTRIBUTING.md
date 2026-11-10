@@ -32,7 +32,7 @@ To test the complete installation path, including an official download and a sec
 npm run test:install
 ```
 
-This check requires network access and `unzip` on Linux or macOS. CI also installs the action itself on Linux, macOS, and Windows and runs tests against the installed executable.
+This check requires network access. It installs with an isolated `PATH` to verify that archive extraction does not depend on system tools, then checks cache reuse. CI also installs the action itself on Linux, macOS, and Windows and runs tests against the installed executable.
 
 ## Releases
 

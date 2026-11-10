@@ -47,7 +47,7 @@ Provided values are registered with the runner's secret masker before being expo
 
 ### Linux job containers
 
-The action installs into the runner tool cache and does not require `sudo`. Linux and macOS require `unzip` on `PATH`. Minimal containers may need to install it first:
+The action installs into the runner tool cache and extracts ZIP archives in Node.js. No system archive tools or `sudo` are required:
 
 ```yaml
 jobs:
@@ -55,7 +55,6 @@ jobs:
     runs-on: ubuntu-latest
     container: fedora:45
     steps:
-      - run: dnf install -y unzip
       - uses: fxzxzyra/setup-ossutil@v1
       - run: ossutil version
 ```

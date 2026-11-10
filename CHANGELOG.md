@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.1 — 2026-11-11
+
+- Extract official ZIP distributions within Node.js without requiring system archive tools.
+- Verify installation and cache reuse with an isolated PATH on Linux, macOS, and Windows.
+
 ## 1.0.0 — 2026-11-11
 
 - Install official ossutil 2.x distributions on Linux, macOS, and Windows.

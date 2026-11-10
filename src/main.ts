@@ -1,7 +1,9 @@
 import * as core from '@actions/core';
 import * as exec from '@actions/exec';
 import * as cache from '@actions/tool-cache';
-import { chmod } from 'node:fs/promises';
+import AdmZip from 'adm-zip';
+import { chmod, mkdtemp } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 export function distribution(version: string, platform: string, architecture: string) {
@@ -45,7 +47,8 @@ export async function run() {
   if (!directory) {
     core.info(`Installing ossutil ${version}`);
     const archive = await cache.downloadTool(release.url);
-    const extracted = await cache.extractZip(archive);
+    const extracted = await mkdtemp(join(tmpdir(), 'setup-ossutil-'));
+    await new AdmZip(archive).extractAllToAsync(extracted);
     directory = await cache.cacheDir(
       join(extracted, release.name),
       'ossutil',

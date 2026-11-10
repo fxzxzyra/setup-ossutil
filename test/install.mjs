@@ -11,6 +11,7 @@ try {
   for (const file of ['path', 'env', 'output']) await writeFile(join(directory, file), '');
   const env = {
     ...process.env,
+    PATH: directory,
     RUNNER_TEMP: directory,
     RUNNER_TOOL_CACHE: join(directory, 'tools'),
     GITHUB_PATH: join(directory, 'path'),
@@ -43,7 +44,7 @@ try {
   );
   assert.doesNotMatch(second.stdout, /Installing ossutil/);
   console.log(
-    `Official latest ossutil ${version} lookup, download, extraction, execution and cache reuse passed`,
+    `Official latest ossutil ${version} lookup, download, extraction without system tools, execution and cache reuse passed`,
   );
 } finally {
   await rm(directory, { recursive: true, force: true });

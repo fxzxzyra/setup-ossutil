@@ -49,6 +49,8 @@ jobs:
       - name: Set up ossutil
         id: ossutil
         uses: ./
+      - name: Install without system archive tools and verify cache reuse
+        run: npm run test:install
       - name: Verify installed version
         run: ossutil version
       - name: Test with installed ossutil
