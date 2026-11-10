@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Code and distribution checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run check
+      - run: npm run build
+      - name: Verify committed distribution
+        run: git diff --exit-code -- dist
+      - run: npm test
+
+  integration:
+    name: Install on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - name: Set up ossutil
+        id: ossutil
+        uses: ./
+      - name: Verify installed version
+        run: ossutil version
+      - name: Test with installed ossutil
+        env:
+          OSSUTIL_EXECUTABLE: ${{ steps.ossutil.outputs.path }}/ossutil${{ runner.os == 'Windows' && '.exe' || '' }}
+        run: npm test

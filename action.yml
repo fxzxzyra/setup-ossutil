@@ -1,0 +1,26 @@
+name: Setup ossutil 2.x
+description: Install and cache Alibaba Cloud ossutil 2.x
+author: Fxzx Zyra
+branding:
+  icon: cloud
+  color: orange
+inputs:
+  version:
+    description: Exact ossutil 2.x version, or latest to query the newest stable 2.x release
+    default: latest
+  access-key-id:
+    description: Alibaba Cloud AccessKey ID
+  access-key-secret:
+    description: Alibaba Cloud AccessKey secret
+  region:
+    description: OSS region, such as cn-shenzhen
+  endpoint:
+    description: Optional custom OSS endpoint
+outputs:
+  version:
+    description: Installed ossutil version
+  path:
+    description: Directory containing the ossutil executable
+runs:
+  using: node24
+  main: dist/index.js
