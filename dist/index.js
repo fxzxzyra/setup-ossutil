@@ -64,7 +64,7 @@ import * as child from 'child_process';
 import { setTimeout as setTimeout$1 } from 'timers';
 import * as stream from 'stream';
 import require$$0$6 from 'zlib';
-import { mkdtemp, chmod as chmod$1 } from 'node:fs/promises';
+import { rm as rm$1, mkdtemp, chmod as chmod$1, writeFile as writeFile$1 } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -30576,6 +30576,32 @@ function error(message, properties = {}) {
 function info(message) {
     process.stdout.write(message + os.EOL);
 }
+//-----------------------------------------------------------------------
+// Wrapper action state
+//-----------------------------------------------------------------------
+/**
+ * Saves state for current action, the state can only be retrieved by this action's post job execution.
+ *
+ * @param     name     name of the state to store
+ * @param     value    value to store. Non-string values will be converted to a string via JSON.stringify
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function saveState(name, value) {
+    const filePath = process.env['GITHUB_STATE'] || '';
+    if (filePath) {
+        return issueFileCommand('STATE', prepareKeyValueMessage(name, value));
+    }
+    issueCommand('save-state', { name }, toCommandValue(value));
+}
+/**
+ * Gets the value of an state set by this action's main execution.
+ *
+ * @param     name     name of the state to get
+ * @returns   string
+ */
+function getState(name) {
+    return process.env[`STATE_${name}`] || '';
+}
 
 var re = {exports: {}};
 
@@ -37924,25 +37950,42 @@ async function run() {
     if (process.platform !== 'win32')
         await chmod$1(executable, 0o755);
     addPath(directory);
-    for (const [input, variable] of Object.entries({
-        'access-key-id': 'OSS_ACCESS_KEY_ID',
-        'access-key-secret': 'OSS_ACCESS_KEY_SECRET',
-        region: 'OSS_REGION',
-        endpoint: 'OSS_ENDPOINT',
-    })) {
+    const settings = [];
+    for (const input of ['access-key-id', 'access-key-secret', 'region', 'endpoint']) {
         const value = getInput(input);
+        delete process.env[`INPUT_${input.toUpperCase()}`];
         if (value) {
             setSecret(value);
-            exportVariable(variable, value);
+            if (/[\r\n]/.test(value))
+                throw new Error(`${input} must be a single line`);
+            settings.push(`${input}=${value}`);
         }
+    }
+    if (settings.length) {
+        const credentials = await mkdtemp(join(process.env.RUNNER_TEMP || tmpdir(), 'ossutil-credentials-'));
+        saveState('credentials-directory', credentials);
+        const config = join(credentials, 'config');
+        await writeFile$1(config, `[default]\n${settings.join('\n')}\n`, { mode: 0o600 });
+        exportVariable('OSSUTIL_CONFIG_FILE', config);
     }
     await exec(executable, ['version']);
     setOutput('version', version);
     setOutput('path', directory);
 }
+async function cleanup() {
+    const directory = getState('credentials-directory');
+    if (directory)
+        await rm$1(directory, { recursive: true, force: true });
+}
 
 try {
-    await run();
+    if (getState('is-post') === 'true') {
+        await cleanup();
+    }
+    else {
+        saveState('is-post', 'true');
+        await run();
+    }
 }
 catch (error) {
     setFailed(error instanceof Error ? error.message : String(error));

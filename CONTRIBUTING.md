@@ -18,7 +18,7 @@ npm test
 
 `npm run build` generates the ESM entrypoint and bundled dependency licenses in `dist/`. Include these generated files with source changes. CI rebuilds them and fails when the committed distribution differs.
 
-The test suite covers version resolution, supported distribution URLs, cache reuse, PATH registration, authentication export, and secret masking. When a real ossutil executable is available, it also tests pagination, authentication, full object replacement, and prefix-scoped deletion against a local in-memory OSS service. No real OSS account is required.
+The test suite covers version resolution, supported distribution URLs, cache reuse, PATH registration, temporary credential configuration, file permissions, post-job cleanup, and secret masking. When a real ossutil executable is available, it also tests pagination, authentication, full object replacement, and prefix-scoped deletion against a local in-memory OSS service. No real OSS account is required.
 
 To enable the OSS integration tests:
 

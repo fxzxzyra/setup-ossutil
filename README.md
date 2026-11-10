@@ -43,7 +43,9 @@ An exact `2.x.y` version skips latest-version lookup. Version ranges and ossutil
 
 Authentication inputs are optional for installation. To access OSS with an AccessKey pair, provide the ID, secret, and region. `endpoint` is optional; omitting it lets ossutil select the regional endpoint.
 
-Provided values are registered with the runner's secret masker before being exported as environment variables for the current action and subsequent steps. This includes `region` and `endpoint`. Credentials are not returned as outputs or written to an ossutil configuration file. When an authentication input is omitted, the action leaves its corresponding environment variable unchanged.
+Provided values, including `region` and `endpoint`, are registered with the runner's secret masker and written to a dedicated configuration file under the runner's temporary directory. On Linux and macOS, the directory is owner-only (`0700`) and the file is owner-readable and writable (`0600`). Only the file path is exported through `OSSUTIL_CONFIG_FILE`; authentication values are not exported as environment variables or returned as outputs.
+
+The action removes its temporary configuration during post-job cleanup, including after failed jobs. Existing ossutil configuration files are left untouched. If no authentication inputs are supplied, no configuration is created. Existing command-line options and OSS environment variables retain ossutil's native precedence over the generated configuration. Steps running as the same user can still read the temporary file; this is not a security boundary between steps.
 
 ### Linux job containers
 
@@ -61,13 +63,13 @@ jobs:
 
 ## Inputs
 
-| Name                | Description                                                  | Default  |
-| ------------------- | ------------------------------------------------------------ | -------- |
-| `version`           | `latest` or an exact stable ossutil `2.x.y` version.         | `latest` |
-| `access-key-id`     | AccessKey ID; exported as `OSS_ACCESS_KEY_ID`.               | Unset    |
-| `access-key-secret` | AccessKey secret; exported as `OSS_ACCESS_KEY_SECRET`.       | Unset    |
-| `region`            | OSS region, such as `cn-shenzhen`; exported as `OSS_REGION`. | Unset    |
-| `endpoint`          | Custom OSS endpoint; exported as `OSS_ENDPOINT`.             | Unset    |
+| Name                | Description                                          | Default  |
+| ------------------- | ---------------------------------------------------- | -------- |
+| `version`           | `latest` or an exact stable ossutil `2.x.y` version. | `latest` |
+| `access-key-id`     | AccessKey ID for the temporary configuration.        | Unset    |
+| `access-key-secret` | AccessKey secret for the temporary configuration.    | Unset    |
+| `region`            | OSS region, such as `cn-shenzhen`.                   | Unset    |
+| `endpoint`          | Optional custom OSS endpoint.                        | Unset    |
 
 ## Outputs
 

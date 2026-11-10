@@ -1,6 +1,6 @@
 import test, { mock } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { copyFile, mkdtemp, mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { tmpdir } from 'node:os';
@@ -52,17 +52,22 @@ test('latest is resolved from the official 2.x metadata on every call; exact ver
 });
 
 test(
-  'bundled Action uses the tool cache, adds PATH and exports masked with credentials',
-  { skip: process.platform === 'win32' },
+  'bundled Action configures private credentials without exporting secrets and cleans them up',
+  { skip: process.platform === 'win32' && !process.env.OSSUTIL_EXECUTABLE },
   async () => {
     const directory = await mkdtemp(join(tmpdir(), 'setup-ossutil-test-'));
     const cached = join(directory, 'tools/ossutil/2.4.1', process.arch);
-    const executable = join(cached, 'ossutil');
+    const executable = join(cached, process.platform === 'win32' ? 'ossutil.exe' : 'ossutil');
     try {
       await mkdir(cached, { recursive: true });
-      await writeFile(executable, '#!/bin/sh\nprintf "2.4.1\\n"\n', { mode: 0o644 });
+      if (process.env.OSSUTIL_EXECUTABLE) {
+        await copyFile(process.env.OSSUTIL_EXECUTABLE, executable);
+      } else {
+        await writeFile(executable, '#!/bin/sh\nprintf "2.4.1\\n"\n', { mode: 0o644 });
+      }
       await writeFile(`${cached}.complete`, '');
-      for (const file of ['path', 'env', 'output']) await writeFile(join(directory, file), '');
+      for (const file of ['path', 'env', 'output', 'state'])
+        await writeFile(join(directory, file), '');
       const { stdout } = await execute(
         process.execPath,
         [resolve(import.meta.dirname, '../dist/index.js')],
@@ -74,6 +79,7 @@ test(
             GITHUB_PATH: join(directory, 'path'),
             GITHUB_ENV: join(directory, 'env'),
             GITHUB_OUTPUT: join(directory, 'output'),
+            GITHUB_STATE: join(directory, 'state'),
             INPUT_VERSION: '2.4.1',
             'INPUT_ACCESS-KEY-ID': 'test-access-id',
             'INPUT_ACCESS-KEY-SECRET': 'test-access-secret',
@@ -87,17 +93,36 @@ test(
       assert.match(stdout, /::add-mask::test-access-secret/);
       assert(stdout.includes('::add-mask::cn-shenzhen'));
       assert(stdout.includes('::add-mask::https://oss-cn-shenzhen.aliyuncs.com'));
-      assert.equal((await stat(executable)).mode & 0o111, 0o111);
+      if (process.platform !== 'win32') {
+        assert.equal((await stat(executable)).mode & 0o111, 0o111);
+      }
       assert.equal((await readFile(join(directory, 'path'), 'utf8')).trim(), cached);
       const environment = await readFile(join(directory, 'env'), 'utf8');
-      for (const key of [
-        'OSS_ACCESS_KEY_ID',
-        'OSS_ACCESS_KEY_SECRET',
-        'OSS_REGION',
-        'OSS_ENDPOINT',
-      ]) {
-        assert(environment.includes(`${key}<<`));
+      assert.match(environment, /^OSSUTIL_CONFIG_FILE<</);
+      assert.doesNotMatch(
+        environment,
+        /test-access|cn-shenzhen|OSS_ACCESS_KEY|OSS_REGION|OSS_ENDPOINT/,
+      );
+      const config = environment.split(/\r?\n/)[1];
+      assert.equal(
+        await readFile(config, 'utf8'),
+        '[default]\naccess-key-id=test-access-id\naccess-key-secret=test-access-secret\nregion=cn-shenzhen\nendpoint=https://oss-cn-shenzhen.aliyuncs.com\n',
+      );
+      if (process.platform !== 'win32') {
+        assert.equal((await stat(config)).mode & 0o777, 0o600);
+        assert.equal((await stat(resolve(config, '..'))).mode & 0o777, 0o700);
       }
+      const state = await readFile(join(directory, 'state'), 'utf8');
+      assert.doesNotMatch(state, /test-access|cn-shenzhen/);
+      const credentials = state.match(/credentials-directory<<[^\n]+\n([^\r\n]+)/)[1];
+      await execute(process.execPath, [resolve(import.meta.dirname, '../dist/index.js')], {
+        env: {
+          ...process.env,
+          'STATE_is-post': 'true',
+          'STATE_credentials-directory': credentials,
+        },
+      });
+      await assert.rejects(stat(config), { code: 'ENOENT' });
       const outputs = await readFile(join(directory, 'output'), 'utf8');
       assert.match(outputs, /2.4.1/);
       assert.doesNotMatch(outputs, /test-access/);

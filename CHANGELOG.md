@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.0 — 2026-11-11
+
+- Store authentication inputs in a private temporary ossutil configuration instead of exporting credentials to subsequent steps.
+- Export only the configuration path and remove the file during post-job cleanup.
+- Preserve existing ossutil configuration files and leave authentication unchanged when no inputs are provided.
+
 ## 1.0.1 — 2026-11-11
 
 - Extract official ZIP distributions within Node.js without requiring system archive tools.

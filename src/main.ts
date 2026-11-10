@@ -2,7 +2,7 @@ import * as core from '@actions/core';
 import * as exec from '@actions/exec';
 import * as cache from '@actions/tool-cache';
 import AdmZip from 'adm-zip';
-import { chmod, mkdtemp } from 'node:fs/promises';
+import { chmod, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -59,19 +59,31 @@ export async function run() {
   const executable = join(directory, release.executable);
   if (process.platform !== 'win32') await chmod(executable, 0o755);
   core.addPath(directory);
-  for (const [input, variable] of Object.entries({
-    'access-key-id': 'OSS_ACCESS_KEY_ID',
-    'access-key-secret': 'OSS_ACCESS_KEY_SECRET',
-    region: 'OSS_REGION',
-    endpoint: 'OSS_ENDPOINT',
-  })) {
+  const settings = [];
+  for (const input of ['access-key-id', 'access-key-secret', 'region', 'endpoint']) {
     const value = core.getInput(input);
+    delete process.env[`INPUT_${input.toUpperCase()}`];
     if (value) {
       core.setSecret(value);
-      core.exportVariable(variable, value);
+      if (/[\r\n]/.test(value)) throw new Error(`${input} must be a single line`);
+      settings.push(`${input}=${value}`);
     }
+  }
+  if (settings.length) {
+    const credentials = await mkdtemp(
+      join(process.env.RUNNER_TEMP || tmpdir(), 'ossutil-credentials-'),
+    );
+    core.saveState('credentials-directory', credentials);
+    const config = join(credentials, 'config');
+    await writeFile(config, `[default]\n${settings.join('\n')}\n`, { mode: 0o600 });
+    core.exportVariable('OSSUTIL_CONFIG_FILE', config);
   }
   await exec.exec(executable, ['version']);
   core.setOutput('version', version);
   core.setOutput('path', directory);
+}
+
+export async function cleanup() {
+  const directory = core.getState('credentials-directory');
+  if (directory) await rm(directory, { recursive: true, force: true });
 }
