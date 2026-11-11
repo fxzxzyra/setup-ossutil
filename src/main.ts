@@ -77,5 +77,5 @@ export async function run() {
   await exec.exec(executable, ['version']);
   core.setOutput('version', version);
   core.setOutput('path', directory);
-  core.setOutput('env', environment);
+  core.setOutput('secrets', environment);
 }

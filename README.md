@@ -41,12 +41,12 @@ An exact `2.x.y` version skips latest-version lookup. Version ranges and ossutil
     bucket: ${{ secrets.OSS_BUCKET }}
 
 - run: ossutil ls "oss://${OSS_BUCKET}/"
-  env: ${{ fromJSON(steps.ossutil.outputs.env) }}
+  env: ${{ fromJSON(steps.ossutil.outputs.secrets) }}
 ```
 
 Authentication inputs are optional for installation. To access OSS with an AccessKey pair, provide the ID, secret, and region. `endpoint` is optional; omitting it lets ossutil select the regional endpoint.
 
-The action returns supplied authentication values and the optional bucket name as a JSON object in its `env` output. Apply it to each step that needs OSS access with `env: ${{ fromJSON(steps.ossutil.outputs.env) }}`. The object contains `OSS_ACCESS_KEY_ID`, `OSS_ACCESS_KEY_SECRET`, `OSS_REGION`, `OSS_ENDPOINT`, and `OSS_BUCKET` only when the corresponding inputs are provided; without inputs it is `{}`.
+The action returns supplied authentication values and the optional bucket name as a JSON object in its `secrets` output. Apply it to each step that needs OSS access with `env: ${{ fromJSON(steps.ossutil.outputs.secrets) }}`. The object contains `OSS_ACCESS_KEY_ID`, `OSS_ACCESS_KEY_SECRET`, `OSS_REGION`, `OSS_ENDPOINT`, and `OSS_BUCKET` only when the corresponding inputs are provided; without inputs it is `{}`.
 
 `bucket` is a convenience input for scripts; ossutil does not select a bucket from `OSS_BUCKET` automatically. Reference `${OSS_BUCKET}` in object URLs as shown above.
 
@@ -71,8 +71,8 @@ jobs:
 | Name                | Description                                          | Default  |
 | ------------------- | ---------------------------------------------------- | -------- |
 | `version`           | `latest` or an exact stable ossutil `2.x.y` version. | `latest` |
-| `access-key-id`     | AccessKey ID included in the `env` output.           | Unset    |
-| `access-key-secret` | AccessKey secret included in the `env` output.       | Unset    |
+| `access-key-id`     | AccessKey ID included in the `secrets` output.       | Unset    |
+| `access-key-secret` | AccessKey secret included in the `secrets` output.   | Unset    |
 | `region`            | OSS region, such as `cn-shenzhen`.                   | Unset    |
 | `bucket`            | Optional bucket name included as `OSS_BUCKET`.       | Unset    |
 | `endpoint`          | Optional custom OSS endpoint.                        | Unset    |
@@ -83,7 +83,7 @@ jobs:
 | --------- | ---------------------------------------------------------------- |
 | `version` | Resolved ossutil version, such as `2.4.1`.                       |
 | `path`    | Cached directory containing the `ossutil` executable.            |
-| `env`     | JSON object of supplied OSS authentication variables and bucket. |
+| `secrets` | JSON object of supplied OSS authentication variables and bucket. |
 
 ## Supported platforms
 

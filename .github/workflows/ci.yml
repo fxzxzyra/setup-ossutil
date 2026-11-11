@@ -56,7 +56,7 @@ jobs:
           bucket: integration-test-bucket
           endpoint: https://oss-cn-shenzhen.aliyuncs.com
       - name: Verify step-scoped authentication output
-        env: ${{ fromJSON(steps.ossutil.outputs.env) }}
+        env: ${{ fromJSON(steps.ossutil.outputs.secrets) }}
         run: node -e "const assert = require('node:assert/strict'); for (const key of ['OSS_ACCESS_KEY_ID', 'OSS_ACCESS_KEY_SECRET', 'OSS_REGION', 'OSS_ENDPOINT', 'OSS_BUCKET']) assert.ok(process.env[key]);"
       - name: Verify authentication is absent from subsequent steps
         run: node -e "const assert = require('node:assert/strict'); for (const key of ['OSS_ACCESS_KEY_ID', 'OSS_ACCESS_KEY_SECRET', 'OSS_REGION', 'OSS_ENDPOINT', 'OSS_BUCKET', 'OSSUTIL_CONFIG_FILE']) assert.equal(process.env[key], undefined);"

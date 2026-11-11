@@ -37924,7 +37924,7 @@ async function run() {
     await exec(executable, ['version']);
     setOutput('version', version);
     setOutput('path', directory);
-    setOutput('env', environment);
+    setOutput('secrets', environment);
 }
 
 try {

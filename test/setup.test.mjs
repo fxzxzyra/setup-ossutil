@@ -109,7 +109,7 @@ test(
         'tools',
       ]);
       const outputs = await readFile(join(directory, 'output'), 'utf8');
-      const environment = JSON.parse(outputs.match(/(?:^|\n)env<<[^\n]+\n([^\r\n]+)/)[1]);
+      const environment = JSON.parse(outputs.match(/(?:^|\n)secrets<<[^\n]+\n([^\r\n]+)/)[1]);
       assert.deepEqual(environment, {
         OSS_ACCESS_KEY_ID: 'test-access-id',
         OSS_ACCESS_KEY_SECRET: 'test-access-secret',

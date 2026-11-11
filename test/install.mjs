@@ -28,7 +28,7 @@ try {
     /version<<[^\n]+\n(2\.\d+\.\d+)/,
   )[1];
   assert(first.stdout.includes(`Installing ossutil ${version}`));
-  assert.match(await readFile(env.GITHUB_OUTPUT, 'utf8'), /(?:^|\n)env<<[^\n]+\n\{\}/);
+  assert.match(await readFile(env.GITHUB_OUTPUT, 'utf8'), /(?:^|\n)secrets<<[^\n]+\n\{\}/);
   assert.equal(await readFile(env.GITHUB_ENV, 'utf8'), '');
   const installed = (await readFile(env.GITHUB_PATH, 'utf8')).trim();
   assert.equal(

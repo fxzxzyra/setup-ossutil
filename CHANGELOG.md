@@ -2,7 +2,9 @@
 
 ## 1.3.0 — 2026-11-11
 
-- Add an optional `bucket` input, included as `OSS_BUCKET` in the JSON `env` output.
+- Rename the JSON output from `env` to `secrets` to describe its contents independently of how callers consume it.
+
+- Add an optional `bucket` input, included as `OSS_BUCKET` in the JSON `secrets` output.
 - Mask the supplied bucket name and keep it scoped to steps that consume the output.
 
 ## 1.2.0 — 2026-11-11

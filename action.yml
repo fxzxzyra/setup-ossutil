@@ -17,14 +17,14 @@ inputs:
   endpoint:
     description: Optional custom OSS endpoint
   bucket:
-    description: Optional bucket name included as OSS_BUCKET in the env output
+    description: Optional bucket name included as OSS_BUCKET in the secrets output
 outputs:
   version:
     description: Installed ossutil version
   path:
     description: Directory containing the ossutil executable
-  env:
-    description: JSON object of supplied OSS authentication variables and bucket for step-level env injection
+  secrets:
+    description: JSON object of supplied sensitive OSS settings keyed by environment variable name
 runs:
   using: node24
   main: dist/index.js
