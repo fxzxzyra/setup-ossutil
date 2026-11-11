@@ -65,6 +65,7 @@ export async function run() {
     'access-key-secret': 'OSS_ACCESS_KEY_SECRET',
     region: 'OSS_REGION',
     endpoint: 'OSS_ENDPOINT',
+    bucket: 'OSS_BUCKET',
   })) {
     const value = core.getInput(input);
     delete process.env[`INPUT_${input.toUpperCase()}`];

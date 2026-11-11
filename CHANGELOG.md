@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.3.0 — 2026-11-11
+
+- Add an optional `bucket` input, included as `OSS_BUCKET` in the JSON `env` output.
+- Mask the supplied bucket name and keep it scoped to steps that consume the output.
+
 ## 1.2.0 — 2026-11-11
 
 - Return authentication as a masked JSON `env` output for explicit step-level injection with `fromJSON`.

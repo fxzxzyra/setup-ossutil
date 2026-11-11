@@ -16,13 +16,15 @@ inputs:
     description: OSS region, such as cn-shenzhen
   endpoint:
     description: Optional custom OSS endpoint
+  bucket:
+    description: Optional bucket name included as OSS_BUCKET in the env output
 outputs:
   version:
     description: Installed ossutil version
   path:
     description: Directory containing the ossutil executable
   env:
-    description: JSON object of supplied OSS authentication variables for step-level env injection
+    description: JSON object of supplied OSS authentication variables and bucket for step-level env injection
 runs:
   using: node24
   main: dist/index.js

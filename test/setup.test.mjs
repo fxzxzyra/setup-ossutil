@@ -84,6 +84,7 @@ test(
             'INPUT_ACCESS-KEY-ID': 'test-access-id',
             'INPUT_ACCESS-KEY-SECRET': 'test-access-secret',
             INPUT_REGION: 'cn-shenzhen',
+            INPUT_BUCKET: 'integration-test-bucket',
             INPUT_ENDPOINT: 'https://oss-cn-shenzhen.aliyuncs.com',
           },
         },
@@ -91,6 +92,7 @@ test(
       assert.doesNotMatch(stdout, /Installing ossutil/);
       assert.match(stdout, /::add-mask::test-access-id/);
       assert.match(stdout, /::add-mask::test-access-secret/);
+      assert.match(stdout, /::add-mask::integration-test-bucket/);
       assert(stdout.includes('::add-mask::cn-shenzhen'));
       assert(stdout.includes('::add-mask::https://oss-cn-shenzhen.aliyuncs.com'));
       if (process.platform !== 'win32') {
@@ -112,6 +114,7 @@ test(
         OSS_ACCESS_KEY_ID: 'test-access-id',
         OSS_ACCESS_KEY_SECRET: 'test-access-secret',
         OSS_REGION: 'cn-shenzhen',
+        OSS_BUCKET: 'integration-test-bucket',
         OSS_ENDPOINT: 'https://oss-cn-shenzhen.aliyuncs.com',
       });
       assert.match(outputs, /2.4.1/);
