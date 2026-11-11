@@ -49,6 +49,16 @@ jobs:
       - name: Set up ossutil
         id: ossutil
         uses: ./
+        with:
+          access-key-id: integration-test-id
+          access-key-secret: integration-test-secret
+          region: cn-shenzhen
+          endpoint: https://oss-cn-shenzhen.aliyuncs.com
+      - name: Verify step-scoped authentication output
+        env: ${{ fromJSON(steps.ossutil.outputs.env) }}
+        run: node -e "const assert = require('node:assert/strict'); for (const key of ['OSS_ACCESS_KEY_ID', 'OSS_ACCESS_KEY_SECRET', 'OSS_REGION', 'OSS_ENDPOINT']) assert.ok(process.env[key]);"
+      - name: Verify authentication is absent from subsequent steps
+        run: node -e "const assert = require('node:assert/strict'); for (const key of ['OSS_ACCESS_KEY_ID', 'OSS_ACCESS_KEY_SECRET', 'OSS_REGION', 'OSS_ENDPOINT', 'OSSUTIL_CONFIG_FILE']) assert.equal(process.env[key], undefined);"
       - name: Install without system archive tools and verify cache reuse
         run: npm run test:install
       - name: Verify installed version

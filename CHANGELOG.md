@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.2.0 — 2026-11-11
+
+- Return authentication as a masked JSON `env` output for explicit step-level injection with `fromJSON`.
+- Remove credential configuration files, job-wide authentication exports, and post-job cleanup.
+- Workflows supplying authentication inputs must now apply the `env` output to steps that need OSS access.
+
 ## 1.1.0 — 2026-11-11
 
 - Store authentication inputs in a private temporary ossutil configuration instead of exporting credentials to subsequent steps.

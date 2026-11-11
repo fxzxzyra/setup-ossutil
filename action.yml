@@ -21,7 +21,8 @@ outputs:
     description: Installed ossutil version
   path:
     description: Directory containing the ossutil executable
+  env:
+    description: JSON object of supplied OSS authentication variables for step-level env injection
 runs:
   using: node24
   main: dist/index.js
-  post: dist/index.js

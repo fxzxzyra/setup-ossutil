@@ -18,27 +18,22 @@ const item = (key, bytes) =>
 async function service(handler, callback) {
   const server = createServer(handler);
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
-  const directory = await mkdtemp(join(tmpdir(), 'ossutil-credentials-test-'));
-  const config = join(directory, 'config');
-  const env = { ...process.env, OSSUTIL_CONFIG_FILE: config };
-  for (const key of ['OSS_ACCESS_KEY_ID', 'OSS_ACCESS_KEY_SECRET', 'OSS_REGION', 'OSS_ENDPOINT']) {
-    delete env[key];
-  }
+  const env = {
+    ...process.env,
+    OSS_ENDPOINT: `http://127.0.0.1:${server.address().port}`,
+    OSS_REGION: 'cn-shenzhen',
+    OSS_ACCESS_KEY_ID: 'test-id',
+    OSS_ACCESS_KEY_SECRET: 'test-secret',
+  };
   try {
-    await writeFile(
-      config,
-      `[default]\naccess-key-id=test-id\naccess-key-secret=test-secret\nregion=cn-shenzhen\nendpoint=http://127.0.0.1:${server.address().port}\n`,
-      { mode: 0o600 },
-    );
     await callback(env);
   } finally {
     await new Promise((resolve) => server.close(resolve));
-    await rm(directory, { recursive: true, force: true });
   }
 }
 
 test(
-  'ossutil 2.x lists all pages using a private configuration without credential environment variables',
+  'ossutil 2.x lists all pages using step-scoped authentication variables',
   { skip: !binary },
   async () => {
     const tokens = [];

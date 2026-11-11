@@ -28,10 +28,11 @@ The default `version: latest` queries Alibaba Cloud's [2.x version metadata](htt
 
 An exact `2.x.y` version skips latest-version lookup. Version ranges and ossutil 1.x are not supported.
 
-### Configure authentication
+### Configure step-scoped authentication
 
 ```yaml
 - uses: fxzxzyra/setup-ossutil@v1
+  id: ossutil
   with:
     access-key-id: ${{ secrets.OSS_ACCESS_KEY_ID }}
     access-key-secret: ${{ secrets.OSS_ACCESS_KEY_SECRET }}
@@ -39,13 +40,14 @@ An exact `2.x.y` version skips latest-version lookup. Version ranges and ossutil
     endpoint: ${{ secrets.OSS_ENDPOINT }}
 
 - run: ossutil ls oss://example-bucket/
+  env: ${{ fromJSON(steps.ossutil.outputs.env) }}
 ```
 
 Authentication inputs are optional for installation. To access OSS with an AccessKey pair, provide the ID, secret, and region. `endpoint` is optional; omitting it lets ossutil select the regional endpoint.
 
-Provided values, including `region` and `endpoint`, are registered with the runner's secret masker and written to a dedicated configuration file under the runner's temporary directory. On Linux and macOS, the directory is owner-only (`0700`) and the file is owner-readable and writable (`0600`). Only the file path is exported through `OSSUTIL_CONFIG_FILE`; authentication values are not exported as environment variables or returned as outputs.
+The action returns supplied authentication values as a JSON object in its `env` output. Apply it to each step that needs OSS access with `env: ${{ fromJSON(steps.ossutil.outputs.env) }}`. The object contains `OSS_ACCESS_KEY_ID`, `OSS_ACCESS_KEY_SECRET`, `OSS_REGION`, and `OSS_ENDPOINT` only when the corresponding inputs are provided; without inputs it is `{}`.
 
-The action removes its temporary configuration during post-job cleanup, including after failed jobs. Existing ossutil configuration files are left untouched. If no authentication inputs are supplied, no configuration is created. Existing command-line options and OSS environment variables retain ossutil's native precedence over the generated configuration. Steps running as the same user can still read the temporary file; this is not a security boundary between steps.
+All supplied values are registered with the runner's secret masker. The action does not write credentials to a configuration file or export authentication variables through `GITHUB_ENV`. Only steps that explicitly consume the output receive the variables. Use the output within the same job; do not print it or forward it as a job output. Secret-containing job outputs may be suppressed by GitHub Actions. Step-scoped environment variables limit propagation but do not isolate steps running as the same user.
 
 ### Linux job containers
 
@@ -66,8 +68,8 @@ jobs:
 | Name                | Description                                          | Default  |
 | ------------------- | ---------------------------------------------------- | -------- |
 | `version`           | `latest` or an exact stable ossutil `2.x.y` version. | `latest` |
-| `access-key-id`     | AccessKey ID for the temporary configuration.        | Unset    |
-| `access-key-secret` | AccessKey secret for the temporary configuration.    | Unset    |
+| `access-key-id`     | AccessKey ID included in the `env` output.           | Unset    |
+| `access-key-secret` | AccessKey secret included in the `env` output.       | Unset    |
 | `region`            | OSS region, such as `cn-shenzhen`.                   | Unset    |
 | `endpoint`          | Optional custom OSS endpoint.                        | Unset    |
 
@@ -77,6 +79,7 @@ jobs:
 | --------- | ----------------------------------------------------- |
 | `version` | Resolved ossutil version, such as `2.4.1`.            |
 | `path`    | Cached directory containing the `ossutil` executable. |
+| `env`     | JSON object of supplied OSS authentication variables. |
 
 ## Supported platforms
 

@@ -1,6 +1,6 @@
 import test, { mock } from 'node:test';
 import assert from 'node:assert/strict';
-import { copyFile, mkdtemp, mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { copyFile, mkdtemp, mkdir, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { tmpdir } from 'node:os';
@@ -52,7 +52,7 @@ test('latest is resolved from the official 2.x metadata on every call; exact ver
 });
 
 test(
-  'bundled Action configures private credentials without exporting secrets and cleans them up',
+  'bundled Action returns masked authentication only as a JSON output without credential files or job-wide exports',
   { skip: process.platform === 'win32' && !process.env.OSSUTIL_EXECUTABLE },
   async () => {
     const directory = await mkdtemp(join(tmpdir(), 'setup-ossutil-test-'));
@@ -97,35 +97,24 @@ test(
         assert.equal((await stat(executable)).mode & 0o111, 0o111);
       }
       assert.equal((await readFile(join(directory, 'path'), 'utf8')).trim(), cached);
-      const environment = await readFile(join(directory, 'env'), 'utf8');
-      assert.match(environment, /^OSSUTIL_CONFIG_FILE<</);
-      assert.doesNotMatch(
-        environment,
-        /test-access|cn-shenzhen|OSS_ACCESS_KEY|OSS_REGION|OSS_ENDPOINT/,
-      );
-      const config = environment.split(/\r?\n/)[1];
-      assert.equal(
-        await readFile(config, 'utf8'),
-        '[default]\naccess-key-id=test-access-id\naccess-key-secret=test-access-secret\nregion=cn-shenzhen\nendpoint=https://oss-cn-shenzhen.aliyuncs.com\n',
-      );
-      if (process.platform !== 'win32') {
-        assert.equal((await stat(config)).mode & 0o777, 0o600);
-        assert.equal((await stat(resolve(config, '..'))).mode & 0o777, 0o700);
-      }
-      const state = await readFile(join(directory, 'state'), 'utf8');
-      assert.doesNotMatch(state, /test-access|cn-shenzhen/);
-      const credentials = state.match(/credentials-directory<<[^\n]+\n([^\r\n]+)/)[1];
-      await execute(process.execPath, [resolve(import.meta.dirname, '../dist/index.js')], {
-        env: {
-          ...process.env,
-          'STATE_is-post': 'true',
-          'STATE_credentials-directory': credentials,
-        },
-      });
-      await assert.rejects(stat(config), { code: 'ENOENT' });
+      assert.equal(await readFile(join(directory, 'env'), 'utf8'), '');
+      assert.equal(await readFile(join(directory, 'state'), 'utf8'), '');
+      assert.deepEqual((await readdir(directory)).sort(), [
+        'env',
+        'output',
+        'path',
+        'state',
+        'tools',
+      ]);
       const outputs = await readFile(join(directory, 'output'), 'utf8');
+      const environment = JSON.parse(outputs.match(/(?:^|\n)env<<[^\n]+\n([^\r\n]+)/)[1]);
+      assert.deepEqual(environment, {
+        OSS_ACCESS_KEY_ID: 'test-access-id',
+        OSS_ACCESS_KEY_SECRET: 'test-access-secret',
+        OSS_REGION: 'cn-shenzhen',
+        OSS_ENDPOINT: 'https://oss-cn-shenzhen.aliyuncs.com',
+      });
       assert.match(outputs, /2.4.1/);
-      assert.doesNotMatch(outputs, /test-access/);
     } finally {
       await rm(directory, { recursive: true, force: true });
     }
